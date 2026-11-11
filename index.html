@@ -104,6 +104,10 @@
                 <h2>إضافة طالب للمجموعة: <span id="activeGroupName" style="color: var(--success);"></span></h2>
                 <form id="addStudentForm">
                     <div class="form-group">
+                        <label>كود الطالب (يدوي):</label>
+                        <input type="text" id="studentCode" required placeholder="أدخل الكود يدوياً (مثال: 101 أو A1)">
+                    </div>
+                    <div class="form-group">
                         <label>اسم الطالب الكامل:</label>
                         <input type="text" id="studentName" required placeholder="مثال: أحمد محمد علي">
                     </div>
@@ -111,7 +115,7 @@
                         <label>رقم هاتف ولي الأمر:</label>
                         <input type="tel" id="parentPhone" required placeholder="مثال: 01000000000">
                     </div>
-                    <button type="submit">حفظ الطالب وتوليد الكود</button>
+                    <button type="submit">حفظ الطالب</button>
                 </form>
             </div>
         </div>
@@ -126,7 +130,7 @@
             <div class="card">
                 <h2>البحث عن طالب (بالكود أو الاسم)</h2>
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="أدخل كود الطالب (أرقام فقط) أو الاسم">
+                    <input type="text" id="searchInput" placeholder="أدخل الكود أو الاسم للبحث">
                     <button type="button" id="searchBtn" style="width: 120px;">بحث</button>
                 </div>
 
@@ -198,6 +202,201 @@
 
         const { data, error } = await window.supabase.from('groups').select('*').order('created_at', { ascending: false });
         if (error) return container.innerHTML = "<p style='color:red;'>خطأ في جلب البيانات.</p>";
+        if (!data || data.length === 0) return container.innerHTML = "<p>لا توجد مجموعات مضافة بعد.</p>";
+
+        container.innerHTML = "";
+        data.forEach((group) => {
+            const div = document.createElement("div");
+            div.className = "group-item";
+            div.innerHTML = `
+                <span>📁 ${group.name}</span>
+                <div class="group-actions">
+                    <button style="width:auto; padding:6px 12px;" onclick="selectGroup('${group.id}', '${group.name}')">فتح</button>
+                    <button class="btn-danger" style="width:auto; padding:6px 10px;" onclick="deleteGroup('${group.id}')">حذف</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    };
+
+    window.deleteGroup = async function(groupId) {
+        if (!confirm("هل أنت متأكد من حذف هذه المجموعة؟ سيتم حذف جميع الطلاب التابعين لها تلقائياً!")) return;
+
+        const { error } = await window.supabase.from('groups').delete().eq('id', groupId);
+        if (error) {
+            alert("حدث خطأ أثناء الحذف: " + error.message);
+        } else {
+            alert("تم حذف المجموعة بنجاح.");
+            if (selectedGroupId === groupId) {
+                selectedGroupId = null;
+                document.getElementById("addStudentCard").style.display = "none";
+                document.getElementById("groupStudentsCard").style.display = "none";
+            }
+            window.loadGroups();
+        }
+    };
+
+    window.selectGroup = function(groupId, groupName) {
+        selectedGroupId = groupId;
+        selectedGroupName = groupName;
+
+        document.getElementById("activeGroupName").innerText = groupName;
+        document.getElementById("viewGroupName").innerText = groupName;
+        document.getElementById("addStudentCard").style.display = "block";
+        document.getElementById("groupStudentsCard").style.display = "block";
+
+        loadStudentsOfGroup(groupId);
+    };
+
+    document.getElementById("addStudentForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        if (!selectedGroupId) return alert("اختر مجموعة أولاً!");
+
+        const code = document.getElementById("studentCode").value.trim();
+        const name = document.getElementById("studentName").value.trim();
+        const phone = document.getElementById("parentPhone").value.trim();
+
+        const { error } = await window.supabase.from('students').insert([{
+            code, name, phone, group_id: selectedGroupId, group_name: selectedGroupName
+        }]);
+
+        if (error) {
+            if(error.code === '23505') {
+                alert("خطأ: هذا الكود مستخدم مسبقاً لطالب آخر، يرجى إدخال كود فريد.");
+            } else {
+                alert("حدث خطأ: " + error.message);
+            }
+            return;
+        }
+        
+        alert(`تم حفظ الطالب بنجاح برقم الكود: ${code}`);
+        document.getElementById("addStudentForm").reset();
+        loadStudentsOfGroup(selectedGroupId);
+    });
+
+    async function loadStudentsOfGroup(groupId) {
+        const container = document.getElementById("studentsList");
+        container.innerHTML = "جاري التحميل...";
+
+        const { data, error } = await window.supabase.from('students').select('*').eq('group_id', groupId);
+        if (error) return container.innerHTML = "<p>خطأ أثناء تحميل الطلاب.</p>";
+        if (!data || data.length === 0) return container.innerHTML = "<p>لا يوجد طلاب بهذه المجموعة.</p>";
+
+        container.innerHTML = "";
+        data.forEach((s) => {
+            const div = document.createElement("div");
+            div.className = "student-row";
+            div.innerHTML = `
+                <div>
+                    <strong>${s.name}</strong><br>
+                    <small>كود: ${s.code} | هاتف: ${s.phone}</small>
+                </div>
+                <div class="student-actions">
+                    <button style="width:auto; padding:4px 8px; font-size:0.85rem;" onclick='displayStudentData(${JSON.stringify(s)})'>التفاصيل</button>
+                    <button class="btn-danger" style="width:auto; padding:4px 8px; font-size:0.85rem;" onclick="deleteStudent('${s.id}')">حذف</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    window.deleteStudent = async function(studentId) {
+        if (!confirm("هل أنت متأكد من حذف هذا الطالب؟")) return;
+
+        const { error } = await window.supabase.from('students').delete().eq('id', studentId);
+        if (error) {
+            alert("حدث خطأ أثناء الحذف: " + error.message);
+        } else {
+            alert("تم حذف الطالب بنجاح.");
+            if (currentStudentId === studentId) {
+                document.getElementById("studentContainer").style.display = "none";
+                currentStudentId = null;
+            }
+            loadStudentsOfGroup(selectedGroupId);
+        }
+    };
+
+    document.getElementById("searchBtn").addEventListener("click", async function() {
+        const query = document.getElementById("searchInput").value.trim();
+        if (!query) return alert("يرجى إدخال كود أو اسم الطالب للبحث!");
+
+        const { data, error } = await window.supabase
+            .from('students')
+            .select('*')
+            .or(`code.eq.${query},name.ilike.%${query}%`);
+
+        if (error || !data || data.length === 0) {
+            alert("لم يتم العثور على الطالب!");
+            document.getElementById("studentContainer").style.display = "none";
+            return;
+        }
+
+        displayStudentData(data[0]);
+    });
+
+    window.displayStudentData = function(student) {
+        currentStudentId = student.id;
+        currentStudentData = student;
+
+        document.getElementById("resName").innerText = student.name;
+        document.getElementById("resCode").innerText = student.code;
+        document.getElementById("resGroup").innerText = student.group_name || "غير محددة";
+        document.getElementById("resPhone").innerText = student.phone;
+        document.getElementById("resLevel").innerText = student.level || "لم يحدد بعد";
+        document.getElementById("resPayment").innerText = student.payment_status || "غير مدفوع";
+
+        const attendanceList = student.attendance || [];
+        const total = attendanceList.length;
+        const present = attendanceList.filter(a => a.status === "حاضر").length;
+        const pct = total > 0 ? Math.round((present / total) * 100) + "%" : "لا يوجد سجل بعد";
+        document.getElementById("resAttendance").innerText = pct;
+
+        document.getElementById("studentContainer").style.display = "block";
+    };
+
+    document.getElementById("btnPresent").addEventListener("click", () => recordAttendance("حاضر"));
+    document.getElementById("btnAbsent").addEventListener("click", () => recordAttendance("غائب"));
+
+    async function recordAttendance(status) {
+        if (!currentStudentId) return;
+        const newRecord = { date: new Date().toLocaleDateString('ar-EG'), status };
+        const updatedAttendance = [...(currentStudentData.attendance || []), newRecord];
+
+        const { error } = await window.supabase.from('students').update({ attendance: updatedAttendance }).eq('id', currentStudentId);
+        if (!error) {
+            currentStudentData.attendance = updatedAttendance;
+            displayStudentData(currentStudentData);
+            alert(`تم تسجيل الطالب ${status}!`);
+        } else alert("حدث خطأ أثناء التحديث.");
+    }
+
+    document.getElementById("btnUpdateLevel").addEventListener("click", async function() {
+        if (!currentStudentId) return;
+        const val = document.getElementById("levelSelect").value;
+        const { error } = await window.supabase.from('students').update({ level: val }).eq('id', currentStudentId);
+        if (!error) {
+            currentStudentData.level = val;
+            displayStudentData(currentStudentData);
+            alert("تم حفظ المستوى!");
+        }
+    });
+
+    document.getElementById("btnUpdatePayment").addEventListener("click", async function() {
+        if (!currentStudentId) return;
+        const val = document.getElementById("paymentSelect").value;
+        const { error } = await window.supabase.from('students').update({ payment_status: val }).eq('id', currentStudentId);
+        if (!error) {
+            currentStudentData.payment_status = val;
+            displayStudentData(currentStudentData);
+            alert("تم تحديث حالة الدفع!");
+        }
+    });
+
+    document.getElementById("btnPrint").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>
+if (error) return container.innerHTML = "<p style='color:red;'>خطأ في جلب البيانات.</p>";
         if (!data || data.length === 0) return container.innerHTML = "<p>لا توجد مجموعات مضافة بعد.</p>";
 
         container.innerHTML = "";
