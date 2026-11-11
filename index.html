@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الأكاديمية</title>
+    
+    <!-- استدعاء مكتبة Supabase السحابية -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        // بيانات مشروعك الفعلي على Supabase
+        const SUPABASE_URL = "https://uqvgfyvmnyfipbihfvia.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxdmdmeXZtbnlmaXBiaWhmdmlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzODE4MTIsImV4cCI6MjEwOTk1NzgxMn0.SWo7_yjtoRxEdnybqr1bRxdCpCNFn1eRELWImRSkDTk";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // إتاحة Supabase عامة في الصفحة
+        window.supabase = supabase;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.loadGroups();
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #ca8a04;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #15803d; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-print { background: #4f46e5; margin-top: 15px; }
+        .btn-print:hover { background: #4338ca; }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .group-item {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .student-details {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        .action-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .student-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printableReport, #printableReport * { visibility: visible; }
+            #printableReport { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>نظام إدارة الأكاديمية</h1>
+        <p>إدارة المجموعات، الطلاب، الحضور، والمستويات سحابياً</p>
+    </header>
+
+    <div class="grid">
+        <!-- الجانب الأيمن: التحكم بالمجموعات وإضافة الطلاب -->
+        <div>
+            <!-- إضافة مجموعة -->
+            <div class="card">
+                <h2>إضافة مجموعة جديدة</h2>
+                <form id="addGroupForm">
+                    <div class="form-group">
+                        <label>اسم المجموعة / الكورس:</label>
+                        <input type="text" id="groupName" required placeholder="مثال: مجموعة الفيزياء - الأولى">
+                    </div>
+                    <button type="submit">إضافة المجموعة</button>
+                </form>
+            </div>
+
+            <!-- قائمة المجموعات -->
+            <div class="card">
+                <h2>المجموعات المتاحة</h2>
+                <div id="groupsList">جاري تحميل المجموعات...</div>
+            </div>
+
+            <!-- إضافة طالب للمجموعة المختارة -->
+            <div class="card" id="addStudentCard" style="display: none;">
+                <h2>إضافة طالب للمجموعة: <span id="activeGroupName" style="color: var(--success);"></span></h2>
+                <form id="addStudentForm">
+                    <div class="form-group">
+                        <label>اسم الطالب الكامل:</label>
+                        <input type="text" id="studentName" required placeholder="مثال: أحمد محمد علي">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم هاتف ولي الأمر:</label>
+                        <input type="tel" id="parentPhone" required placeholder="مثال: 01000000000">
+                    </div>
+                    <button type="submit">حفظ الطالب وتوليد الكود</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- الجانب الأيسر: البحث والتحكم في بيانات الطالب -->
+        <div>
+            <!-- قائمة طلاب المجموعة -->
+            <div class="card" id="groupStudentsCard" style="display: none;">
+                <h2>طلاب المجموعة: <span id="viewGroupName"></span></h2>
+                <div id="studentsList">اختر مجموعة لعرض طلابها.</div>
+            </div>
+
+            <!-- البحث السريع برقم الكود -->
+            <div class="card">
+                <h2>البحث عن طالب (بالكود أو الاسم)</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="أدخل كود الطالب (مثال: ACAD-1001) أو الاسم">
+                    <button type="button" id="searchBtn" style="width: 120px;">بحث</button>
+                </div>
+
+                <!-- تفاصيل الطالب والإجراءات -->
+                <div id="studentContainer" style="display: none;">
+                    <div class="student-details" id="printableReport">
+                        <h3 id="resName" style="margin-bottom: 10px;"></h3>
+                        <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
+                        <div class="info-row"><span>المجموعة:</span><strong id="resGroup"></strong></div>
+                        <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
+                        <div class="info-row"><span>المستوى الأكاديمي:</span><strong id="resLevel"></strong></div>
+                        <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
+                        <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
+                    </div>
+
+                    <!-- أزرار الإجراءات -->
+                    <div class="action-sections">
+                        <!-- الحضور -->
+                        <div>
+                            <label>تسجيل حضور اليوم:</label>
+                            <button type="button" class="btn-success" id="btnPresent">حاضر</button>
+                            <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:5px;">غائب</button>
+                        </div>
+                        <!-- المستوى -->
+                        <div>
+                            <label>تحديث المستوى:</label>
+                            <select id="levelSelect">
+                                <option value="ممتاز">ممتاز</option>
+                                <option value="جيد جداً">جيد جداً</option>
+                                <option value="جيد">جيد</option>
+                                <option value="يحتاج تحسين">يحتاج تحسين</option>
+                            </select>
+                            <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حفظ المستوى</button>
+                        </div>
+                        <!-- الدفع -->
+                        <div>
+                            <label>تحديث الدفع:</label>
+                            <select id="paymentSelect">
+                                <option value="مدفوع">مدفوع</option>
+                                <option value="غير مدفوع">غير مدفوع</option>
+                            </select>
+                            <button type="button" id="btnUpdatePayment" style="margin-top:5px;">حفظ حالة الدفع</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-print" id="btnPrint">طباعة تقرير الطالب</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedGroupId = null;
+    let selectedGroupName = "";
+    let currentStudentId = null;
+    let currentStudentData = null;
+
+    // 1. إضافة مجموعة سحابياً
+    document.getElementById("addGroupForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const name = document.getElementById("groupName").value.trim();
+
+        const { error } = await window.supabase
+            .from('groups')
+            .insert([{ name: name }]);
+
+        if (error) {
+            alert("حدث خطأ في إضافة المجموعة: " + error.message);
+        } else {
+            alert("تم إضافة المجموعة بنجاح!");
+            document.getElementById("addGroupForm").reset();
+            window.loadGroups();
+        }
+    });
+
+    // 2. جلب المجموعات
+    window.loadGroups = async function() {
+        const container = document.getElementById("groupsList");
+        container.innerHTML = "جاري التحميل...";
+
+        const { data, error } = await window.supabase
+            .from('groups')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = "<p>خطأ في جلب المجموعات، تأكد من إنشاء جدول groups في Supabase.</p>";
+            return;
+        }
+
+        container.innerHTML = "";
+        if (data.length === 0) {
+            container.innerHTML = "<p>لا توجد مجموعات مضافة.</p>";
+            return;
+        }
+
+        data.forEach((group) => {
+            const div = document.createElement("div");
+            div.className = "group-item";
+            div.innerHTML = `
+                <span>📁 ${group.name}</span>
+                <button style="width:auto; padding:6px 12px;" onclick="selectGroup('${group.id}', '${group.name}')">فتح المجموعة</button>
+            `;
+            container.appendChild(div);
+        });
+    };
+
+    // اختيار مجموعة
+    window.selectGroup = function(groupId, groupName) {
+        selectedGroupId = groupId;
+        selectedGroupName = groupName;
+
+        document.getElementById("activeGroupName").innerText = groupName;
+        document.getElementById("viewGroupName").innerText = groupName;
+
+        document.getElementById("addStudentCard").style.display = "block";
+        document.getElementById("groupStudentsCard").style.display = "block";
+
+        loadStudentsOfGroup(groupId);
+    };
+
+    // 3. إضافة طالب داخل المجموعة
+    document.getElementById("addStudentForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        if (!selectedGroupId) return alert("يرجى اختيار مجموعة أولاً!");
+
+        const name = document.getElementById("studentName").value.trim();
+        const phone = document.getElementById("parentPhone").value.trim();
+        const uniqueCode = "ACAD-" + Math.floor(1000 + Math.random() * 9000);
+
+        const { error } = await window.supabase
+            .from('students')
+            .insert([{
+                code: uniqueCode,
+                name: name,
+                phone: phone,
+                group_id: selectedGroupId,
+                group_name: selectedGroupName,
+                level: "لم يحدد بعد",
+                payment_status: "غير مدفوع",
+                attendance: []
+            }]);
+
+        if (error) {
+            alert("حدث خطأ أثناء حفظ الطالب: " + error.message);
+        } else {
+            alert(`تم حفظ الطالب بنجاح!\nكود الطالب: ${uniqueCode}`);
+            document.getElementById("addStudentForm").reset();
+            loadStudentsOfGroup(selectedGroupId);
+        }
+    });
+
+    // تحميل طلاب المجموعة
+    async function loadStudentsOfGroup(groupId) {
+        const container = document.getElementById("studentsList");
+        container.innerHTML = "جاري التحميل...";
+
+        const { data, error } = await window.supabase
+            .from('students')
+            .select('*')
+            .eq('group_id', groupId);
+
+        if (error) {
+            container.innerHTML = "<p>خطأ في جلب الطلاب، تأكد من إنشاء جدول students.</p>";
+            return;
+        }
+
+        container.innerHTML = "";
+        if (data.length === 0) {
+            container.innerHTML = "<p>لا يوجد طلاب بهذه المجموعة.</p>";
+            return;
+        }
+
+        data.forEach((s) => {
+            const div = document.createElement("div");
+            div.className = "student-row";
+            div.innerHTML = `
+                <div>
+                    <strong>${s.name}</strong><br>
+                    <small>كود: ${s.code} | هاتف: ${s.phone}</small>
+                </div>
+                <button style="width:auto; padding:4px 8px; font-size:0.85rem;" onclick='displayStudentData(${JSON.stringify(s)})'>عرض التفاصيل</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // 4. البحث عن طالب بواسطة الكود أو الاسم
+    document.getElementById("searchBtn").addEventListener("click", async function() {
+        const query = document.getElementById("searchInput").value.trim();
+        if (!query) return alert("يرجى كتابة الكود أو الاسم للبحث!");
+
+        const { data, error } = await window.supabase
+            .from('students')
+            .select('*')
+            .or(`code.eq.${query},name.ilike.%${query}%`);
+
+        if (error || data.length === 0) {
+            alert("لم يُعثر على طالب بهذا الكود أو الاسم!");
+            document.getElementById("studentContainer").style.display = "none";
+            return;
+        }
+
+        displayStudentData(data[0]);
+    });
+
+    // عرض بيانات الطالب المختارة
+    window.displayStudentData = function(student) {
+        currentStudentId = student.id;
+        currentStudentData = student;
+
+        document.getElementById("resName").innerText = student.name;
+        document.getElementById("resCode").innerText = student.code;
+        document.getElementById("resGroup").innerText = student.group_name || "غير محددة";
+        document.getElementById("resPhone").innerText = student.phone;
+        document.getElementById("resLevel").innerText = student.level;
+        document.getElementById("resPayment").innerText = student.payment_status;
+
+        const attendanceList = student.attendance || [];
+        const totalDays = attendanceList.length;
+        const presentDays = attendanceList.filter(a => a.status === "حاضر").length;
+        const percentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) + "%" : "لا يوجد سجل";
+        document.getElementById("resAttendance").innerText = percentage;
+
+        document.getElementById("studentContainer").style.display = "block";
+    };
+
+    // 5. التحديث السحابي للحضور، المستوى، والدفع
+    document.getElementById("btnPresent").addEventListener("click", () => recordAttendance("حاضر"));
+    document.getElementById("btnAbsent").addEventListener("click", () => recordAttendance("غائب"));
+
+    async function recordAttendance(status) {
+        if (!currentStudentId) return;
+        const newRecord = { date: new Date().toLocaleDateString('ar-EG'), status: status };
+        const updatedAttendance = [...(currentStudentData.attendance || []), newRecord];
+
+        const { error } = await window.supabase
+            .from('students')
+            .update({ attendance: updatedAttendance })
+            .eq('id', currentStudentId);
+
+        if (!error) {
+            currentStudentData.attendance = updatedAttendance;
+            displayStudentData(currentStudentData);
+            alert(`تم تسجيل الطالب ${status}!`);
+        } else {
+            alert("حدث خطأ أثناء التحديث.");
+        }
+    }
+
+    document.getElementById("btnUpdateLevel").addEventListener("click", async function() {
+        if (!currentStudentId) return;
+        const val = document.getElementById("levelSelect").value;
+
+        const { error } = await window.supabase
+            .from('students')
+            .update({ level: val })
+            .eq('id', currentStudentId);
+
+        if (!error) {
+            currentStudentData.level = val;
+            displayStudentData(currentStudentData);
+            alert("تم تحديث المستوى!");
+        }
+    });
+
+    document.getElementById("btnUpdatePayment").addEventListener("click", async function() {
+        if (!currentStudentId) return;
+        const val = document.getElementById("paymentSelect").value;
+
+        const { error } = await window.supabase
+            .from('students')
+            .update({ payment_status: val })
+            .eq('id', currentStudentId);
+
+        if (!error) {
+            currentStudentData.payment_status = val;
+            displayStudentData(currentStudentData);
+            alert("تم تحديث حالة الدفع!");
+        }
+    });
+
+    // طباعة التقرير
+    document.getElementById("btnPrint").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>
