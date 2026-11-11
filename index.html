@@ -97,6 +97,10 @@
 
             <div class="card">
                 <h2>المجموعات المتاحة</h2>
+                <!-- خانة البحث في المجموعات -->
+                <div class="form-group">
+                    <input type="text" id="searchGroupInput" placeholder="بحث عن مجموعة..." oninput="filterGroups()">
+                </div>
                 <div id="groupsList">جاري التحميل...</div>
             </div>
 
@@ -143,6 +147,12 @@
                         <div class="info-row"><span>المستوى الأكاديمي:</span><strong id="resLevel"></strong></div>
                         <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
                         <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
+                        
+                        <!-- سجل الحضور بالتفصيل مع الأوقات -->
+                        <div style="margin-top: 10px;">
+                            <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الحضور والأوقات:</span>
+                            <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 100px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 5px; border-radius: 4px; border: 1px solid #ddd;"></div>
+                        </div>
                     </div>
 
                     <div class="action-sections">
@@ -183,6 +193,7 @@
     let selectedGroupName = "";
     let currentStudentId = null;
     let currentStudentData = null;
+    let allGroups = []; // لحفظ المجموعات وإجراء البحث المحلي عليها
 
     document.getElementById("addGroupForm").addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -202,10 +213,21 @@
 
         const { data, error } = await window.supabase.from('groups').select('*').order('created_at', { ascending: false });
         if (error) return container.innerHTML = "<p style='color:red;'>خطأ في جلب البيانات.</p>";
-        if (!data || data.length === 0) return container.innerHTML = "<p>لا توجد مجموعات مضافة بعد.</p>";
+        
+        allGroups = data || [];
+        renderGroups(allGroups);
+    };
 
+    function renderGroups(groups) {
+        const container = document.getElementById("groupsList");
         container.innerHTML = "";
-        data.forEach((group) => {
+        
+        if (!groups || groups.length === 0) {
+            container.innerHTML = "<p>لا توجد مجموعات مطابقة.</p>";
+            return;
+        }
+
+        groups.forEach((group) => {
             const div = document.createElement("div");
             div.className = "group-item";
             div.innerHTML = `
@@ -217,6 +239,13 @@
             `;
             container.appendChild(div);
         });
+    }
+
+    // وظيفة البحث داخل المجموعات
+    window.filterGroups = function() {
+        const query = document.getElementById("searchGroupInput").value.trim().toLowerCase();
+        const filtered = allGroups.filter(g => g.name.toLowerCase().includes(query));
+        renderGroups(filtered);
     };
 
     window.deleteGroup = async function(groupId) {
@@ -351,6 +380,14 @@
         const pct = total > 0 ? Math.round((present / total) * 100) + "%" : "لا يوجد سجل بعد";
         document.getElementById("resAttendance").innerText = pct;
 
+        // عرض تفاصيل الحضور والأوقات
+        const historyContainer = document.getElementById("resAttendanceHistory");
+        if (attendanceList.length === 0) {
+            historyContainer.innerHTML = "لا يوجد سجل حضور سابق.";
+        } else {
+            historyContainer.innerHTML = attendanceList.map(a => `<div>• ${a.date} (${a.time || ''}) - <span style="color:${a.status === 'حاضر' ? 'green':'red'}">${a.status}</span></div>`).join('');
+        }
+
         document.getElementById("studentContainer").style.display = "block";
     };
 
@@ -359,14 +396,20 @@
 
     async function recordAttendance(status) {
         if (!currentStudentId) return;
-        const newRecord = { date: new Date().toLocaleDateString('ar-EG'), status };
+        
+        // تسجيل التاريخ والوقت الحالي بدقة
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-EG');
+        const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        
+        const newRecord = { date: dateStr, time: timeStr, status: status };
         const updatedAttendance = [...(currentStudentData.attendance || []), newRecord];
 
         const { error } = await window.supabase.from('students').update({ attendance: updatedAttendance }).eq('id', currentStudentId);
         if (!error) {
             currentStudentData.attendance = updatedAttendance;
             displayStudentData(currentStudentData);
-            alert(`تم تسجيل الطالب ${status}!`);
+            alert(`تم تسجيل الطالب ${status} في تمام الساعة ${timeStr}!`);
         } else alert("حدث خطأ أثناء التحديث.");
     }
 
