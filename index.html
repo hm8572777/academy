@@ -89,7 +89,7 @@
                 <form id="addGroupForm">
                     <div class="form-group">
                         <label>اسم المجموعة / الكورس:</label>
-                        <input type="text" id="groupName" required placeholder="مثال: مجموعات الرياضة - الصف الثالث">
+                        <input type="text" id="groupName" required placeholder="مثال: مجموعة الفيزياء - الأولى">
                     </div>
                     <button type="submit">إضافة المجموعة</button>
                 </form>
@@ -126,7 +126,7 @@
             <div class="card">
                 <h2>البحث عن طالب (بالكود أو الاسم)</h2>
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="أدخل كود الطالب أو الاسم">
+                    <input type="text" id="searchInput" placeholder="أدخل كود الطالب (أرقام فقط) أو الاسم">
                     <button type="button" id="searchBtn" style="width: 120px;">بحث</button>
                 </div>
 
@@ -215,7 +215,6 @@
         });
     };
 
-    // حذف مجموعة
     window.deleteGroup = async function(groupId) {
         if (!confirm("هل أنت متأكد من حذف هذه المجموعة؟ سيتم حذف جميع الطلاب التابعين لها تلقائياً!")) return;
 
@@ -251,7 +250,8 @@
 
         const name = document.getElementById("studentName").value.trim();
         const phone = document.getElementById("parentPhone").value.trim();
-        // توليد كود أرقام فقط (مثال: 5 أرقام عشوائية بين 10000 و 99999)
+        
+        // كود أرقام فقط (مكون من 5 أرقام عشوائية)
         const uniqueCode = Math.floor(10000 + Math.random() * 90000).toString();
 
         const { error } = await window.supabase.from('students').insert([{
@@ -260,7 +260,7 @@
 
         if (error) return alert("حدث خطأ: " + error.message);
         
-        alert(`تم الحفظ بنجاح! كود الطالب (أرقام فقط): ${uniqueCode}`);
+        alert(`تم الحفظ بنجاح!\nكود الطالب (أرقام فقط): ${uniqueCode}`);
         document.getElementById("addStudentForm").reset();
         loadStudentsOfGroup(selectedGroupId);
     });
@@ -291,7 +291,6 @@
         });
     }
 
-    // حذف طالب
     window.deleteStudent = async function(studentId) {
         if (!confirm("هل أنت متأكد من حذف هذا الطالب؟")) return;
 
@@ -310,7 +309,7 @@
 
     document.getElementById("searchBtn").addEventListener("click", async function() {
         const query = document.getElementById("searchInput").value.trim();
-        if (!query) return alert("يرجى إدخال اسم أو كود الطالب!");
+        if (!query) return alert("يرجى إدخال كود أو اسم الطالب للبحث!");
 
         const { data, error } = await window.supabase
             .from('students')
@@ -388,3 +387,4 @@
 </script>
 </body>
 </html>
+ 
