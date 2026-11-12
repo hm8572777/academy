@@ -159,13 +159,19 @@
             <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
             <div class="info-row"><span>المجموعة:</span><strong id="resGroup"></strong></div>
             <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
-            <div class="info-row"><span>المستوى ودرجة الامتحان:</span><strong id="resLevel"></strong></div>
             <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
             <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
             
+            <!-- سجل الحضور -->
             <div style="margin-top: 10px;">
                 <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الحضور والأوقات الكامل:</span>
-                <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 120px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
+                <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 100px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
+            </div>
+
+            <!-- سجل الامتحانات الكامل -->
+            <div style="margin-top: 15px;">
+                <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الامتحانات والدرجات الكامل:</span>
+                <div id="resExamsHistory" style="font-size: 0.8rem; color: #444; max-height: 120px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
             </div>
         </div>
 
@@ -176,12 +182,12 @@
                 <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:5px;">غائب</button>
             </div>
             <div>
-                <label>رصد درجة الامتحان:</label>
+                <label>رصد درجة امتحان جديدة:</label>
                 <div class="grade-inputs">
                     <input type="number" id="studentScoreInput" placeholder="درجة الطالب" min="0" step="0.5">
                     <input type="number" id="totalScoreInput" placeholder="الدرجة الكلية" min="1" step="0.5">
                 </div>
-                <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حساب وحفظ المستوى</button>
+                <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حفظ في سجل الامتحانات</button>
             </div>
             <div>
                 <label>تحديث الدفع:</label>
@@ -379,12 +385,12 @@
         document.getElementById("resCode").innerText = student.code;
         document.getElementById("resGroup").innerText = student.group_name || "غير محددة";
         document.getElementById("resPhone").innerText = student.phone;
-        document.getElementById("resLevel").innerText = student.level || "لم يحدد بعد";
         document.getElementById("resPayment").innerText = student.payment_status || "غير مدفوع";
 
         document.getElementById("studentScoreInput").value = "";
         document.getElementById("totalScoreInput").value = "";
 
+        // حساب الحضور
         const attendanceList = student.attendance || [];
         const total = attendanceList.length;
         const present = attendanceList.filter(a => a.status === "حاضر").length;
@@ -396,6 +402,15 @@
             historyContainer.innerHTML = "لا يوجد سجل حضور سابق.";
         } else {
             historyContainer.innerHTML = attendanceList.map(a => `<div>• ${a.date} (${a.time || ''}) - <span style="color:${a.status === 'حاضر' ? 'green':'red'}">${a.status}</span></div>`).join('');
+        }
+
+        // عرض سجل الامتحانات الكامل
+        const examsList = student.exams_history || [];
+        const examsContainer = document.getElementById("resExamsHistory");
+        if (examsList.length === 0) {
+            examsContainer.innerHTML = "لا توجد امتحانات مسجلة بعد.";
+        } else {
+            examsContainer.innerHTML = examsList.map(ex => `<div>• <strong>${ex.date}</strong>: حصل على <span style="color:var(--primary-color)">${ex.score} / ${ex.total}</span> (${ex.percentage}%) - تقدير: <strong>${ex.grade}</strong></div>`).join('');
         }
 
         // إظهار القسم والانتقال إليه تلقائياً في آخر الصفحة
@@ -425,25 +440,6 @@
         } else alert("حدث خطأ أثناء التحديث.");
     }
 
-    function calculateGradeLevel(studentScore, totalScore) {
-        const percentage = (studentScore / totalScore) * 100;
-        let grade = "";
-
-        if (percentage >= 85) {
-            grade = "ممتاز";
-        } else if (percentage >= 75) {
-            grade = "جيد جداً";
-        } else if (percentage >= 65) {
-            grade = "جيد";
-        } else if (percentage >= 50) {
-            grade = "مقبول";
-        } else {
-            grade = "يحتاج تحسين";
-        }
-
-        return `${grade} (${studentScore} / ${totalScore} - ${Math.round(percentage)}%)`;
-    }
-
     document.getElementById("btnUpdateLevel").addEventListener("click", async function() {
         if (!currentStudentId) return;
 
@@ -460,15 +456,41 @@
             return alert("درجة الطالب يجب أن تكون بين 0 والدرجة الكلية للامتحان!");
         }
 
-        const calculatedLevel = calculateGradeLevel(studentScore, totalScore);
+        const percentage = Math.round((studentScore / totalScore) * 100);
+        let grade = "";
 
-        const { error } = await window.supabase.from('students').update({ level: calculatedLevel }).eq('id', currentStudentId);
-        if (!error) {
-            currentStudentData.level = calculatedLevel;
-            displayStudentData(currentStudentData);
-            alert(`تم حفظ المستوى بنجاح: ${calculatedLevel}`);
+        if (percentage >= 85) {
+            grade = "ممتاز";
+        } else if (percentage >= 75) {
+            grade = "جيد جداً";
+        } else if (percentage >= 65) {
+            grade = "جيد";
+        } else if (percentage >= 50) {
+            grade = "مقبول";
         } else {
-            alert("حدث خطأ أثناء حفظ الدرجة.");
+            grade = "يحتاج تحسين";
+        }
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+        const newExamRecord = {
+            date: dateStr,
+            score: studentScore,
+            total: totalScore,
+            percentage: percentage,
+            grade: grade
+        };
+
+        const updatedExams = [...(currentStudentData.exams_history || []), newExamRecord];
+
+        const { error } = await window.supabase.from('students').update({ exams_history: updatedExams }).eq('id', currentStudentId);
+        if (!error) {
+            currentStudentData.exams_history = updatedExams;
+            displayStudentData(currentStudentData);
+            alert(`تمت إضافة الامتحان للسجل بنجاح!\nالتقدير: ${grade} (${percentage}%)`);
+        } else {
+            alert("حدث خطأ أثناء حفظ درجة الامتحان.");
         }
     });
 
@@ -487,3 +509,4 @@
 </script>
 </body>
 </html>
+ 
