@@ -32,9 +32,14 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; scroll-behavior: smooth; }
         .container { max-width: 1200px; margin: 0 auto; }
         header { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; text-align: center; }
+
+        /* شريط البحث الثابت في الأعلى */
+        .top-search-bar { background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border-color); margin-bottom: 24px; display: flex; gap: 10px; align-items: center; }
+        .top-search-bar input { flex: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; outline: none; }
+        .top-search-bar button { width: 140px; }
 
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .grid { grid-template-columns: 1fr 2fr; } }
@@ -56,13 +61,13 @@
         .btn-danger:hover { background: #b91c1c; }
         .btn-print { background: #4f46e5; margin-top: 15px; }
 
-        .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
         .group-item { background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .group-actions { display: flex; gap: 5px; }
         
         .student-details { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 15px; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #cbd5e1; }
-        .action-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 15px; }
+        .action-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .grade-inputs { display: flex; gap: 6px; }
         .student-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
         .student-actions { display: flex; gap: 5px; }
 
@@ -81,9 +86,30 @@
         <p>إدارة الحضور والمجموعات وتوليد تقارير الطلاب</p>
     </header>
 
+    <!-- 1. البحث عن طالب (بالكود أو الاسم) في أعلى الصفحة -->
+    <div class="top-search-bar">
+        <input type="text" id="searchInput" placeholder="ابحث عن طالب بالكود أو الاسم الكامل...">
+        <button type="button" id="searchBtn">بحث عن طالب</button>
+    </div>
+
     <div class="grid">
-        <!-- الجانب الأيمن -->
+        <!-- الجانب الأيمن: البحث في المجاميع، ثم قائمة المجاميع، ثم الإضافة -->
         <div>
+            <!-- أولاً: البحث في المجاميع -->
+            <div class="card">
+                <h2>بحث في المجاميع</h2>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <input type="text" id="searchGroupInput" placeholder="ابحث عن اسم مجموعة..." oninput="filterGroups()">
+                </div>
+            </div>
+
+            <!-- ثانياً: قائمة المجاميع المتاحة -->
+            <div class="card">
+                <h2>المجاميع المتاحة</h2>
+                <div id="groupsList">جاري التحميل...</div>
+            </div>
+
+            <!-- ثالثاً: إضافة مجموعة جديدة -->
             <div class="card">
                 <h2>إضافة مجموعة جديدة</h2>
                 <form id="addGroupForm">
@@ -95,15 +121,7 @@
                 </form>
             </div>
 
-            <div class="card">
-                <h2>المجموعات المتاحة</h2>
-                <!-- خانة البحث في المجموعات -->
-                <div class="form-group">
-                    <input type="text" id="searchGroupInput" placeholder="بحث عن مجموعة..." oninput="filterGroups()">
-                </div>
-                <div id="groupsList">جاري التحميل...</div>
-            </div>
-
+            <!-- إضافة طالب للمجموعة المفعلة -->
             <div class="card" id="addStudentCard" style="display: none;">
                 <h2>إضافة طالب للمجموعة: <span id="activeGroupName" style="color: var(--success);"></span></h2>
                 <form id="addStudentForm">
@@ -124,67 +142,58 @@
             </div>
         </div>
 
-        <!-- الجانب الأيسر -->
+        <!-- الجانب الأيسر: طلاب المجموعة -->
         <div>
             <div class="card" id="groupStudentsCard" style="display: none;">
                 <h2>طلاب المجموعة: <span id="viewGroupName"></span></h2>
                 <div id="studentsList">اختر مجموعة لعرض طلابها.</div>
             </div>
+        </div>
+    </div>
 
-            <div class="card">
-                <h2>البحث عن طالب (بالكود أو الاسم)</h2>
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="أدخل الكود أو الاسم للبحث">
-                    <button type="button" id="searchBtn" style="width: 120px;">بحث</button>
-                </div>
-
-                <div id="studentContainer" style="display: none;">
-                    <div class="student-details" id="printableReport">
-                        <h3 id="resName" style="margin-bottom: 10px;"></h3>
-                        <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
-                        <div class="info-row"><span>المجموعة:</span><strong id="resGroup"></strong></div>
-                        <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
-                        <div class="info-row"><span>المستوى الأكاديمي:</span><strong id="resLevel"></strong></div>
-                        <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
-                        <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
-                        
-                        <!-- سجل الحضور بالتفصيل مع الأوقات -->
-                        <div style="margin-top: 10px;">
-                            <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الحضور والأوقات:</span>
-                            <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 100px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 5px; border-radius: 4px; border: 1px solid #ddd;"></div>
-                        </div>
-                    </div>
-
-                    <div class="action-sections">
-                        <div>
-                            <label>تسجيل حضور اليوم:</label>
-                            <button type="button" class="btn-success" id="btnPresent">حاضر</button>
-                            <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:5px;">غائب</button>
-                        </div>
-                        <div>
-                            <label>تحديث المستوى:</label>
-                            <select id="levelSelect">
-                                <option value="ممتاز">ممتاز</option>
-                                <option value="جيد جداً">جيد جداً</option>
-                                <option value="جيد">جيد</option>
-                                <option value="يحتاج تحسين">يحتاج تحسين</option>
-                            </select>
-                            <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حفظ المستوى</button>
-                        </div>
-                        <div>
-                            <label>تحديث الدفع:</label>
-                            <select id="paymentSelect">
-                                <option value="مدفوع">مدفوع</option>
-                                <option value="غير مدفوع">غير مدفوع</option>
-                            </select>
-                            <button type="button" id="btnUpdatePayment" style="margin-top:5px;">حفظ حالة الدفع</button>
-                        </div>
-                    </div>
-
-                    <button type="button" class="btn-print" id="btnPrint">طباعة تقرير الطالب</button>
-                </div>
+    <!-- قسم تفاصيل الطالب (يظهر في آخر الصفحة عند اختيار أو البحث عن طالب) -->
+    <div class="card" id="studentContainer" style="display: none; margin-top: 25px;">
+        <h2>ملف الطالب وتفاصيل الأداء</h2>
+        <div class="student-details" id="printableReport">
+            <h3 id="resName" style="margin-bottom: 10px;"></h3>
+            <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
+            <div class="info-row"><span>المجموعة:</span><strong id="resGroup"></strong></div>
+            <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
+            <div class="info-row"><span>المستوى ودرجة الامتحان:</span><strong id="resLevel"></strong></div>
+            <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
+            <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
+            
+            <div style="margin-top: 10px;">
+                <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الحضور والأوقات الكامل:</span>
+                <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 120px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
             </div>
         </div>
+
+        <div class="action-sections">
+            <div>
+                <label>تسجيل حضور اليوم:</label>
+                <button type="button" class="btn-success" id="btnPresent">حاضر</button>
+                <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:5px;">غائب</button>
+            </div>
+            <div>
+                <label>رصد درجة الامتحان:</label>
+                <div class="grade-inputs">
+                    <input type="number" id="studentScoreInput" placeholder="درجة الطالب" min="0" step="0.5">
+                    <input type="number" id="totalScoreInput" placeholder="الدرجة الكلية" min="1" step="0.5">
+                </div>
+                <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حساب وحفظ المستوى</button>
+            </div>
+            <div>
+                <label>تحديث الدفع:</label>
+                <select id="paymentSelect">
+                    <option value="مدفوع">مدفوع</option>
+                    <option value="غير مدفوع">غير مدفوع</option>
+                </select>
+                <button type="button" id="btnUpdatePayment" style="margin-top:5px;">حفظ حالة الدفع</button>
+            </div>
+        </div>
+
+        <button type="button" class="btn-print" id="btnPrint">طباعة تقرير الطالب</button>
     </div>
 </div>
 
@@ -193,7 +202,7 @@
     let selectedGroupName = "";
     let currentStudentId = null;
     let currentStudentData = null;
-    let allGroups = []; // لحفظ المجموعات وإجراء البحث المحلي عليها
+    let allGroups = [];
 
     document.getElementById("addGroupForm").addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -241,7 +250,6 @@
         });
     }
 
-    // وظيفة البحث داخل المجموعات
     window.filterGroups = function() {
         const query = document.getElementById("searchGroupInput").value.trim().toLowerCase();
         const filtered = allGroups.filter(g => g.name.toLowerCase().includes(query));
@@ -341,7 +349,7 @@
                 document.getElementById("studentContainer").style.display = "none";
                 currentStudentId = null;
             }
-            loadStudentsOfGroup(selectedGroupId);
+            if(selectedGroupId) loadStudentsOfGroup(selectedGroupId);
         }
     };
 
@@ -374,13 +382,15 @@
         document.getElementById("resLevel").innerText = student.level || "لم يحدد بعد";
         document.getElementById("resPayment").innerText = student.payment_status || "غير مدفوع";
 
+        document.getElementById("studentScoreInput").value = "";
+        document.getElementById("totalScoreInput").value = "";
+
         const attendanceList = student.attendance || [];
         const total = attendanceList.length;
         const present = attendanceList.filter(a => a.status === "حاضر").length;
         const pct = total > 0 ? Math.round((present / total) * 100) + "%" : "لا يوجد سجل بعد";
         document.getElementById("resAttendance").innerText = pct;
 
-        // عرض تفاصيل الحضور والأوقات
         const historyContainer = document.getElementById("resAttendanceHistory");
         if (attendanceList.length === 0) {
             historyContainer.innerHTML = "لا يوجد سجل حضور سابق.";
@@ -388,7 +398,10 @@
             historyContainer.innerHTML = attendanceList.map(a => `<div>• ${a.date} (${a.time || ''}) - <span style="color:${a.status === 'حاضر' ? 'green':'red'}">${a.status}</span></div>`).join('');
         }
 
-        document.getElementById("studentContainer").style.display = "block";
+        // إظهار القسم والانتقال إليه تلقائياً في آخر الصفحة
+        const container = document.getElementById("studentContainer");
+        container.style.display = "block";
+        container.scrollIntoView({ behavior: 'smooth' });
     };
 
     document.getElementById("btnPresent").addEventListener("click", () => recordAttendance("حاضر"));
@@ -397,7 +410,6 @@
     async function recordAttendance(status) {
         if (!currentStudentId) return;
         
-        // تسجيل التاريخ والوقت الحالي بدقة
         const now = new Date();
         const dateStr = now.toLocaleDateString('ar-EG');
         const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -409,18 +421,54 @@
         if (!error) {
             currentStudentData.attendance = updatedAttendance;
             displayStudentData(currentStudentData);
-            alert(`تم تسجيل الطالب ${status} في تمام الساعة ${timeStr}!`);
+            alert(`تم تسجيل الطالب ${status} في تمام الساعة ${timeStr} وحفظ السجل بنجاح!`);
         } else alert("حدث خطأ أثناء التحديث.");
+    }
+
+    function calculateGradeLevel(studentScore, totalScore) {
+        const percentage = (studentScore / totalScore) * 100;
+        let grade = "";
+
+        if (percentage >= 85) {
+            grade = "ممتاز";
+        } else if (percentage >= 75) {
+            grade = "جيد جداً";
+        } else if (percentage >= 65) {
+            grade = "جيد";
+        } else if (percentage >= 50) {
+            grade = "مقبول";
+        } else {
+            grade = "يحتاج تحسين";
+        }
+
+        return `${grade} (${studentScore} / ${totalScore} - ${Math.round(percentage)}%)`;
     }
 
     document.getElementById("btnUpdateLevel").addEventListener("click", async function() {
         if (!currentStudentId) return;
-        const val = document.getElementById("levelSelect").value;
-        const { error } = await window.supabase.from('students').update({ level: val }).eq('id', currentStudentId);
+
+        const studentScore = parseFloat(document.getElementById("studentScoreInput").value);
+        const totalScore = parseFloat(document.getElementById("totalScoreInput").value);
+
+        if (isNaN(studentScore) || isNaN(totalScore)) {
+            return alert("يرجى إدخال درجة الطالب والدرجة الكلية للامتحان!");
+        }
+        if (totalScore <= 0) {
+            return alert("يجب أن تكون الدرجة الكلية للامتحان أكبر من صفر!");
+        }
+        if (studentScore < 0 || studentScore > totalScore) {
+            return alert("درجة الطالب يجب أن تكون بين 0 والدرجة الكلية للامتحان!");
+        }
+
+        const calculatedLevel = calculateGradeLevel(studentScore, totalScore);
+
+        const { error } = await window.supabase.from('students').update({ level: calculatedLevel }).eq('id', currentStudentId);
         if (!error) {
-            currentStudentData.level = val;
+            currentStudentData.level = calculatedLevel;
             displayStudentData(currentStudentData);
-            alert("تم حفظ المستوى!");
+            alert(`تم حفظ المستوى بنجاح: ${calculatedLevel}`);
+        } else {
+            alert("حدث خطأ أثناء حفظ الدرجة.");
         }
     });
 
@@ -431,7 +479,7 @@
         if (!error) {
             currentStudentData.payment_status = val;
             displayStudentData(currentStudentData);
-            alert("تم تحديث حالة الدفع!");
+            alert("تم تحديث حالة الدفع وحفظها!");
         }
     });
 
