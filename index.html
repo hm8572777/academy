@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الأكاديمية الذكي</title>
+    <title>MAMA ROMA - نظام إدارة الأكاديمية الذكي</title>
     
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -19,62 +19,129 @@
         });
     </script>
 
+    <!-- استيراد خط عربي أنيق (Cairo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
+            --primary-color: #db2777; /* زهري فخم */
+            --primary-hover: #be185d;
+            --secondary-color: #f472b6;
+            --bg-color: #fdf2f8; /* خلفية وردية فاتحة هادئة جداً */
             --card-bg: #ffffff;
-            --text-color: #1e293b;
-            --border-color: #e2e8f0;
+            --text-color: #831843;
+            --text-main: #1e293b;
+            --border-color: #fbcfe8;
             --success: #16a34a;
             --danger: #dc2626;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; scroll-behavior: smooth; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; scroll-behavior: smooth; }
         .container { max-width: 1200px; margin: 0 auto; }
-        header { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; text-align: center; }
+
+        /* ترويسة أنيقة مع انيميشن */
+        header { 
+            background: linear-gradient(135deg, #ffffff 0%, #fce7f3 100%); 
+            padding: 25px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 15px rgba(219, 39, 119, 0.1); 
+            margin-bottom: 24px; 
+            text-align: center; 
+            border: 2px solid var(--border-color);
+            animation: fadeInDown 0.8s ease-in-out;
+        }
+        header h1 { 
+            color: var(--primary-color); 
+            font-size: 2.2rem; 
+            font-weight: 900; 
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        header p { color: #6b7280; font-size: 1.05rem; }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         /* شريط البحث الثابت في الأعلى */
-        .top-search-bar { background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border-color); margin-bottom: 24px; display: flex; gap: 10px; align-items: center; }
-        .top-search-bar input { flex: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; outline: none; }
-        .top-search-bar button { width: 140px; }
+        .top-search-bar { 
+            background: var(--card-bg); 
+            padding: 18px 20px; 
+            border-radius: 14px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            border: 2px solid var(--border-color); 
+            margin-bottom: 24px; 
+            display: flex; 
+            gap: 12px; 
+            align-items: center; 
+            animation: fadeInUp 0.8s ease-in-out;
+        }
+        .top-search-bar input { flex: 1; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; transition: all 0.3s; }
+        .top-search-bar input:focus { border-color: var(--primary-color); box-shadow: 0 0 8px rgba(219, 39, 119, 0.2); }
+        .top-search-bar button { width: 150px; background: var(--primary-color); }
 
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .grid { grid-template-columns: 1fr 2fr; } }
 
-        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border-color); margin-bottom: 20px; }
-        .card h2 { font-size: 1.25rem; margin-bottom: 16px; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        .card { 
+            background: var(--card-bg); 
+            padding: 22px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04); 
+            border: 2px solid var(--border-color); 
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover { transform: translateY(-3px); }
+        .card h2 { 
+            font-size: 1.3rem; 
+            margin-bottom: 16px; 
+            color: var(--primary-color); 
+            border-bottom: 2px dashed var(--border-color); 
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         .form-group { margin-bottom: 14px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; outline: none; }
+        label { display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.95rem; color: #4b5563; }
+        input, select { width: 100%; padding: 11px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.3s; }
         input:focus, select:focus { border-color: var(--primary-color); }
 
-        button { background: var(--primary-color); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s; }
-        button:hover { background: var(--primary-hover); }
+        button { background: var(--primary-color); color: white; border: none; padding: 11px 18px; border-radius: 8px; cursor: pointer; font-weight: 700; width: 100%; transition: all 0.3s; font-size: 1rem; }
+        button:hover { background: var(--primary-hover); box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3); }
 
         .btn-success { background: var(--success); }
-        .btn-success:hover { background: #15803d; }
+        .btn-success:hover { background: #15803d; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3); }
         .btn-danger { background: var(--danger); }
-        .btn-danger:hover { background: #b91c1c; }
+        .btn-danger:hover { background: #b91c1c; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3); }
         .btn-print { background: #4f46e5; margin-top: 15px; }
+        .btn-print:hover { background: #4338ca; }
 
-        .group-item { background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .group-actions { display: flex; gap: 5px; }
+        .group-item { background: #fff1f2; padding: 14px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #fecdd3; transition: background 0.2s; }
+        .group-item:hover { background: #ffe4e6; }
+        .group-actions { display: flex; gap: 6px; }
         
-        .student-details { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 15px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #cbd5e1; }
-        .action-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .student-details { background: #fff1f2; padding: 18px; border-radius: 12px; margin-top: 15px; border: 1px solid #fecdd3; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed #f43f5e33; font-size: 1rem; }
+        .action-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
         .grade-inputs { display: flex; gap: 6px; }
-        .student-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
-        .student-actions { display: flex; gap: 5px; }
+        .student-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color); }
+        .student-row:hover { background: #fff5f8; }
+        .student-actions { display: flex; gap: 6px; }
 
         @media print {
             body * { visibility: hidden; }
             #printableReport, #printableReport * { visibility: visible; }
-            #printableReport { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            #printableReport { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white !important; }
         }
     </style>
 </head>
@@ -82,13 +149,13 @@
 
 <div class="container">
     <header>
-        <h1>نظام إدارة الأكاديمية الذكي</h1>
-        <p>إدارة الحضور والمجموعات وتوليد تقارير الطلاب</p>
+        <h1>🧬 MAMA ROMA 🔬</h1>
+        <p>✨ منصة العلوم والأكاديمية الذكية لإدارة الحضور، الامتحانات، والتقارير الاحترافية ✨</p>
     </header>
 
     <!-- 1. البحث عن طالب (بالكود أو الاسم) في أعلى الصفحة -->
     <div class="top-search-bar">
-        <input type="text" id="searchInput" placeholder="ابحث عن طالب بالكود أو الاسم الكامل...">
+        <input type="text" id="searchInput" placeholder="🔍 ابحث عن طالب بالكود أو الاسم الكامل...">
         <button type="button" id="searchBtn">بحث عن طالب</button>
     </div>
 
@@ -97,25 +164,25 @@
         <div>
             <!-- أولاً: البحث في المجاميع -->
             <div class="card">
-                <h2>بحث في المجاميع</h2>
+                <h2>🧪 بحث في المجاميع</h2>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <input type="text" id="searchGroupInput" placeholder="ابحث عن اسم مجموعة..." oninput="filterGroups()">
+                    <input type="text" id="searchGroupInput" placeholder="ابحث عن اسم مجموعة علمية..." oninput="filterGroups()">
                 </div>
             </div>
 
             <!-- ثانياً: قائمة المجاميع المتاحة -->
             <div class="card">
-                <h2>المجاميع المتاحة</h2>
-                <div id="groupsList">جاري التحميل...</div>
+                <h2>📚 المجاميع المتاحة</h2>
+                <div id="groupsList">جاري تحميل البيانات...</div>
             </div>
 
             <!-- ثالثاً: إضافة مجموعة جديدة -->
             <div class="card">
-                <h2>إضافة مجموعة جديدة</h2>
+                <h2>➕ إضافة مجموعة جديدة</h2>
                 <form id="addGroupForm">
                     <div class="form-group">
                         <label>اسم المجموعة / الكورس:</label>
-                        <input type="text" id="groupName" required placeholder="مثال: مجموعة الفيزياء - الأولى">
+                        <input type="text" id="groupName" required placeholder="مثال: مجموعة الأحياء - الكيمياء المتقدمة">
                     </div>
                     <button type="submit">إضافة المجموعة</button>
                 </form>
@@ -123,7 +190,7 @@
 
             <!-- إضافة طالب للمجموعة المفعلة -->
             <div class="card" id="addStudentCard" style="display: none;">
-                <h2>إضافة طالب للمجموعة: <span id="activeGroupName" style="color: var(--success);"></span></h2>
+                <h2>👩‍🔬 إضافة طالب للمجموعة: <span id="activeGroupName" style="color: var(--primary-color);"></span></h2>
                 <form id="addStudentForm">
                     <div class="form-group">
                         <label>كود الطالب (يدوي):</label>
@@ -131,7 +198,7 @@
                     </div>
                     <div class="form-group">
                         <label>اسم الطالب الكامل:</label>
-                        <input type="text" id="studentName" required placeholder="مثال: أحمد محمد علي">
+                        <input type="text" id="studentName" required placeholder="مثال: مريم أحمد علي">
                     </div>
                     <div class="form-group">
                         <label>رقم هاتف ولي الأمر:</label>
@@ -145,34 +212,34 @@
         <!-- الجانب الأيسر: طلاب المجموعة -->
         <div>
             <div class="card" id="groupStudentsCard" style="display: none;">
-                <h2>طلاب المجموعة: <span id="viewGroupName"></span></h2>
+                <h2>👥 طلاب المجموعة: <span id="viewGroupName"></span></h2>
                 <div id="studentsList">اختر مجموعة لعرض طلابها.</div>
             </div>
         </div>
     </div>
 
     <!-- قسم تفاصيل الطالب (يظهر في آخر الصفحة عند اختيار أو البحث عن طالب) -->
-    <div class="card" id="studentContainer" style="display: none; margin-top: 25px;">
-        <h2>ملف الطالب وتفاصيل الأداء الشامل</h2>
+    <div class="card" id="studentContainer" style="display: none; margin-top: 25px; animation: fadeInUp 0.6s ease-in-out;">
+        <h2>📊 ملف الطالب وتفاصيل الأداء الشامل (MAMA ROMA)</h2>
         <div class="student-details" id="printableReport">
-            <h3 id="resName" style="margin-bottom: 10px;"></h3>
+            <h3 id="resName" style="margin-bottom: 10px; color: var(--primary-color);"></h3>
             <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
             <div class="info-row"><span>المجموعة:</span><strong id="resGroup"></strong></div>
             <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
             <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
             <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
-            <div class="info-row" style="background: #e2e8f0; padding: 6px; border-radius: 4px;"><span>النسبة والمستوى العام للطالب:</span><strong id="resOverallLevel" style="color: var(--primary-color);"></strong></div>
+            <div class="info-row" style="background: #fbcfe855; padding: 8px; border-radius: 6px;"><span>النسبة والمستوى العام للطالب:</span><strong id="resOverallLevel" style="color: var(--primary-color);"></strong></div>
             
             <!-- سجل الحضور -->
-            <div style="margin-top: 10px;">
-                <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الحضور والأوقات الكامل:</span>
-                <div id="resAttendanceHistory" style="font-size: 0.8rem; color: #444; max-height: 100px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
+            <div style="margin-top: 12px;">
+                <span style="font-size: 0.9rem; font-weight: bold; color: var(--primary-color);">📅 سجل الحضور والأوقات الكامل:</span>
+                <div id="resAttendanceHistory" style="font-size: 0.85rem; color: #444; max-height: 120px; overflow-y: auto; margin-top: 6px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);"></div>
             </div>
 
             <!-- سجل الامتحانات الكامل -->
             <div style="margin-top: 15px;">
-                <span style="font-size: 0.85rem; font-weight: bold; color: #555;">سجل الامتحانات والدرجات الكامل:</span>
-                <div id="resExamsHistory" style="font-size: 0.8rem; color: #444; max-height: 120px; overflow-y: auto; margin-top: 5px; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></div>
+                <span style="font-size: 0.9rem; font-weight: bold; color: var(--primary-color);">📝 سجل الامتحانات والدرجات العلمي:</span>
+                <div id="resExamsHistory" style="font-size: 0.85rem; color: #444; max-height: 140px; overflow-y: auto; margin-top: 6px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);"></div>
             </div>
         </div>
 
@@ -180,7 +247,7 @@
             <div>
                 <label>تسجيل حضور اليوم:</label>
                 <button type="button" class="btn-success" id="btnPresent">حاضر</button>
-                <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:5px;">غائب</button>
+                <button type="button" class="btn-danger" id="btnAbsent" style="margin-top:6px;">غائب</button>
             </div>
             <div>
                 <label>رصد درجة امتحان جديدة:</label>
@@ -188,7 +255,7 @@
                     <input type="number" id="studentScoreInput" placeholder="درجة الطالب" min="0" step="0.5">
                     <input type="number" id="totalScoreInput" placeholder="الدرجة الكلية" min="1" step="0.5">
                 </div>
-                <button type="button" id="btnUpdateLevel" style="margin-top:5px;">حفظ في سجل الامتحانات</button>
+                <button type="button" id="btnUpdateLevel" style="margin-top:6px;">حفظ في سجل الامتحانات</button>
             </div>
             <div>
                 <label>تحديث الدفع:</label>
@@ -196,11 +263,11 @@
                     <option value="مدفوع">مدفوع</option>
                     <option value="غير مدفوع">غير مدفوع</option>
                 </select>
-                <button type="button" id="btnUpdatePayment" style="margin-top:5px;">حفظ حالة الدفع</button>
+                <button type="button" id="btnUpdatePayment" style="margin-top:6px;">حفظ حالة الدفع</button>
             </div>
         </div>
 
-        <button type="button" class="btn-print" id="btnPrint">طباعة تقرير الطالب</button>
+        <button type="button" class="btn-print" id="btnPrint">طباعة تقرير الطالب الاحترافي</button>
     </div>
 </div>
 
@@ -218,7 +285,7 @@
         const { error } = await window.supabase.from('groups').insert([{ name }]);
         if (error) return alert("خطأ: " + error.message);
         
-        alert("تمت إضافة المجموعة بنجاح!");
+        alert("تمت إضافة المجموعة العلمية بنجاح!");
         document.getElementById("addGroupForm").reset();
         window.loadGroups();
     });
@@ -247,7 +314,7 @@
             const div = document.createElement("div");
             div.className = "group-item";
             div.innerHTML = `
-                <span>📁 ${group.name}</span>
+                <span>🔬 ${group.name}</span>
                 <div class="group-actions">
                     <button style="width:auto; padding:6px 12px;" onclick="selectGroup('${group.id}', '${group.name}')">فتح</button>
                     <button class="btn-danger" style="width:auto; padding:6px 10px;" onclick="deleteGroup('${group.id}')">حذف</button>
@@ -333,11 +400,11 @@
             div.innerHTML = `
                 <div>
                     <strong>${s.name}</strong><br>
-                    <small>كود: ${s.code} | هاتف: ${s.phone}</small>
+                    <small style="color: #666;">كود: ${s.code} | هاتف: ${s.phone}</small>
                 </div>
                 <div class="student-actions">
-                    <button style="width:auto; padding:4px 8px; font-size:0.85rem;" onclick='displayStudentData(${JSON.stringify(s)})'>التفاصيل</button>
-                    <button class="btn-danger" style="width:auto; padding:4px 8px; font-size:0.85rem;" onclick="deleteStudent('${s.id}')">حذف</button>
+                    <button style="width:auto; padding:6px 12px; font-size:0.85rem;" onclick='displayStudentData(${JSON.stringify(s)})'>التفاصيل</button>
+                    <button class="btn-danger" style="width:auto; padding:6px 10px; font-size:0.85rem;" onclick="deleteStudent('${s.id}')">حذف</button>
                 </div>
             `;
             container.appendChild(div);
@@ -378,7 +445,6 @@
         displayStudentData(data[0]);
     });
 
-    // دالة حساب المستوى العام والشامل للطالب بناء على الحضور والامتحانات
     function calculateOverallPerformance(attendanceList, examsList) {
         let attendancePct = 0;
         let examsPct = 0;
@@ -397,7 +463,7 @@
 
         let overallPct = 0;
         if (hasAttendance && hasExams) {
-            overallPct = Math.round((attendancePct * 0.4) + (examsPct * 0.6)); // 40% حضور و 60% امتحانات
+            overallPct = Math.round((attendancePct * 0.4) + (examsPct * 0.6));
         } else if (hasExams) {
             overallPct = Math.round(examsPct);
         } else if (hasAttendance) {
@@ -429,7 +495,6 @@
         document.getElementById("studentScoreInput").value = "";
         document.getElementById("totalScoreInput").value = "";
 
-        // حساب الحضور
         const attendanceList = student.attendance || [];
         const total = attendanceList.length;
         const present = attendanceList.filter(a => a.status === "حاضر").length;
@@ -443,19 +508,16 @@
             historyContainer.innerHTML = attendanceList.map(a => `<div>• ${a.date} (${a.time || ''}) - <span style="color:${a.status === 'حاضر' ? 'green':'red'}">${a.status}</span></div>`).join('');
         }
 
-        // عرض سجل الامتحانات الكامل
         const examsList = student.exams_history || [];
         const examsContainer = document.getElementById("resExamsHistory");
         if (examsList.length === 0) {
             examsContainer.innerHTML = "لا توجد امتحانات مسجلة بعد.";
         } else {
-            examsContainer.innerHTML = examsList.map(ex => `<div>• <strong>${ex.date}</strong>: حصل على <span style="color:var(--primary-color)">${ex.score} / ${ex.total}</span> (${ex.percentage}%) - تقدير: <strong>${ex.grade}</strong></div>`).join('');
+            examsContainer.innerHTML = examsList.map(ex => `<div>• <strong>${ex.date}</strong>: حصل على <span style="color:var(--primary-color); font-weight:bold;">${ex.score} / ${ex.total}</span> (${ex.percentage}%) - تقدير: <strong>${ex.grade}</strong></div>`).join('');
         }
 
-        // عرض النسبة والمستوى العام الشامل
         document.getElementById("resOverallLevel").innerText = calculateOverallPerformance(attendanceList, examsList);
 
-        // إظهار القسم والانتقال إليه تلقائياً في آخر الصفحة
         const container = document.getElementById("studentContainer");
         container.style.display = "block";
         container.scrollIntoView({ behavior: 'smooth' });
