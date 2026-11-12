@@ -153,7 +153,7 @@
 
     <!-- قسم تفاصيل الطالب (يظهر في آخر الصفحة عند اختيار أو البحث عن طالب) -->
     <div class="card" id="studentContainer" style="display: none; margin-top: 25px;">
-        <h2>ملف الطالب وتفاصيل الأداء</h2>
+        <h2>ملف الطالب وتفاصيل الأداء الشامل</h2>
         <div class="student-details" id="printableReport">
             <h3 id="resName" style="margin-bottom: 10px;"></h3>
             <div class="info-row"><span>كود الطالب:</span><strong id="resCode"></strong></div>
@@ -161,6 +161,7 @@
             <div class="info-row"><span>رقم ولي الأمر:</span><strong id="resPhone"></strong></div>
             <div class="info-row"><span>حالة الاشتراك:</span><strong id="resPayment"></strong></div>
             <div class="info-row"><span>نسبة الحضور:</span><strong id="resAttendance"></strong></div>
+            <div class="info-row" style="background: #e2e8f0; padding: 6px; border-radius: 4px;"><span>النسبة والمستوى العام للطالب:</span><strong id="resOverallLevel" style="color: var(--primary-color);"></strong></div>
             
             <!-- سجل الحضور -->
             <div style="margin-top: 10px;">
@@ -377,6 +378,44 @@
         displayStudentData(data[0]);
     });
 
+    // دالة حساب المستوى العام والشامل للطالب بناء على الحضور والامتحانات
+    function calculateOverallPerformance(attendanceList, examsList) {
+        let attendancePct = 0;
+        let examsPct = 0;
+        let hasAttendance = attendanceList && attendanceList.length > 0;
+        let hasExams = examsList && examsList.length > 0;
+
+        if (hasAttendance) {
+            const presentCount = attendanceList.filter(a => a.status === "حاضر").length;
+            attendancePct = (presentCount / attendanceList.length) * 100;
+        }
+
+        if (hasExams) {
+            const totalPercentages = examsList.reduce((sum, ex) => sum + ex.percentage, 0);
+            examsPct = totalPercentages / examsList.length;
+        }
+
+        let overallPct = 0;
+        if (hasAttendance && hasExams) {
+            overallPct = Math.round((attendancePct * 0.4) + (examsPct * 0.6)); // 40% حضور و 60% امتحانات
+        } else if (hasExams) {
+            overallPct = Math.round(examsPct);
+        } else if (hasAttendance) {
+            overallPct = Math.round(attendancePct);
+        } else {
+            return "لم يتم رصد بيانات كافية بعد";
+        }
+
+        let grade = "";
+        if (overallPct >= 85) grade = "ممتاز";
+        else if (overallPct >= 75) grade = "جيد جداً";
+        else if (overallPct >= 65) grade = "جيد";
+        else if (overallPct >= 50) grade = "مقبول";
+        else grade = "يحتاج تحسين";
+
+        return `${grade} (${overallPct}%)`;
+    }
+
     window.displayStudentData = function(student) {
         currentStudentId = student.id;
         currentStudentData = student;
@@ -412,6 +451,9 @@
         } else {
             examsContainer.innerHTML = examsList.map(ex => `<div>• <strong>${ex.date}</strong>: حصل على <span style="color:var(--primary-color)">${ex.score} / ${ex.total}</span> (${ex.percentage}%) - تقدير: <strong>${ex.grade}</strong></div>`).join('');
         }
+
+        // عرض النسبة والمستوى العام الشامل
+        document.getElementById("resOverallLevel").innerText = calculateOverallPerformance(attendanceList, examsList);
 
         // إظهار القسم والانتقال إليه تلقائياً في آخر الصفحة
         const container = document.getElementById("studentContainer");
@@ -459,17 +501,11 @@
         const percentage = Math.round((studentScore / totalScore) * 100);
         let grade = "";
 
-        if (percentage >= 85) {
-            grade = "ممتاز";
-        } else if (percentage >= 75) {
-            grade = "جيد جداً";
-        } else if (percentage >= 65) {
-            grade = "جيد";
-        } else if (percentage >= 50) {
-            grade = "مقبول";
-        } else {
-            grade = "يحتاج تحسين";
-        }
+        if (percentage >= 85) grade = "ممتاز";
+        else if (percentage >= 75) grade = "جيد جداً";
+        else if (percentage >= 65) grade = "جيد";
+        else if (percentage >= 50) grade = "مقبول";
+        else grade = "يحتاج تحسين";
 
         const now = new Date();
         const dateStr = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
