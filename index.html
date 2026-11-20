@@ -332,18 +332,18 @@
         renderGroups(filtered);
     };
 
-    // دالة تفريغ ومسح جميع البيانات القديمة (الطلاب والمجاميع دفعة واحدة)
+    // دالة تفريغ ومسح جميع البيانات القديمة (باستخدام شرط آمن تماماً لا يتسبب بأخطاء)
     window.clearAllOldData = async function() {
         if (!confirm("⚠️ تحذير خطير: هل أنت متأكد من رغبتك في حذف جميع بيانات الطلاب والمجاميع القديمة نهائياً والبدء من جديد؟")) return;
 
-        // 1. حذف جميع الطلاب أولاً
-        const { error: studentsError } = await window.supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // 1. حذف جميع الطلاب (عبر اختيار كل السجلات بدون قيد خاطئ للـ ID)
+        const { error: studentsError } = await window.supabase.from('students').delete().not('id', 'is', null);
         
         // 2. حذف جميع المجاميع
-        const { error: groupsError } = await window.supabase.from('groups').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error: groupsError } = await window.supabase.from('groups').delete().not('id', 'is', null);
 
         if (studentsError || groupsError) {
-            alert("حدث خطأ أثناء مسح البيانات القديمة.");
+            alert("حدث خطأ أثناء مسح البيانات القديمة: " + (studentsError?.message || groupsError?.message));
         } else {
             alert("✨ تم مسح جميع البيانات القديمة بنجاح وأصبحت الصفحة نظيفة تماماً!");
             location.reload();
