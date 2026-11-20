@@ -332,21 +332,31 @@
         renderGroups(filtered);
     };
 
-    // دالة تفريغ ومسح جميع البيانات القديمة (باستخدام شرط آمن تماماً لا يتسبب بأخطاء)
+    // دالة تفريغ ومسح جميع البيانات القديمة (جلب وحذف صف صف لتجاوز قيود الحماية)
     window.clearAllOldData = async function() {
         if (!confirm("⚠️ تحذير خطير: هل أنت متأكد من رغبتك في حذف جميع بيانات الطلاب والمجاميع القديمة نهائياً والبدء من جديد؟")) return;
 
-        // 1. حذف جميع الطلاب (عبر اختيار كل السجلات بدون قيد خاطئ للـ ID)
-        const { error: studentsError } = await window.supabase.from('students').delete().not('id', 'is', null);
-        
-        // 2. حذف جميع المجاميع
-        const { error: groupsError } = await window.supabase.from('groups').delete().not('id', 'is', null);
+        try {
+            // 1. جلب وحذف جميع الطلاب صفاً صفاً
+            const { data: students } = await window.supabase.from('students').select('id');
+            if (students && students.length > 0) {
+                for (let s of students) {
+                    await window.supabase.from('students').delete().eq('id', s.id);
+                }
+            }
 
-        if (studentsError || groupsError) {
-            alert("حدث خطأ أثناء مسح البيانات القديمة: " + (studentsError?.message || groupsError?.message));
-        } else {
-            alert("✨ تم مسح جميع البيانات القديمة بنجاح وأصبحت الصفحة نظيفة تماماً!");
+            // 2. جلب وحذف جميع المجاميع صفاً صفاً
+            const { data: groups } = await window.supabase.from('groups').select('id');
+            if (groups && groups.length > 0) {
+                for (let g of groups) {
+                    await window.supabase.from('groups').delete().eq('id', g.id);
+                }
+            }
+
+            alert("✨ تم مسح جميع البيانات القديمة بنجاح تام وأصبحت الصفحة نظيفة تماماً!");
             location.reload();
+        } catch (err) {
+            alert("حدث خطأ أثناء مسح البيانات: " + err.message);
         }
     };
 
