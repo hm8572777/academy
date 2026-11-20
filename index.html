@@ -70,7 +70,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* شريط البحث الثابت في الأعلى */
+        /* شريط البحث وتفريغ البيانات في الأعلى */
         .top-search-bar { 
             background: var(--card-bg); 
             padding: 18px 20px; 
@@ -81,11 +81,12 @@
             display: flex; 
             gap: 12px; 
             align-items: center; 
+            flex-wrap: wrap;
             animation: fadeInUp 0.8s ease-in-out;
         }
-        .top-search-bar input { flex: 1; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; transition: all 0.3s; }
+        .top-search-bar input { flex: 1; min-width: 200px; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; transition: all 0.3s; }
         .top-search-bar input:focus { border-color: var(--primary-color); box-shadow: 0 0 8px rgba(219, 39, 119, 0.2); }
-        .top-search-bar button { width: 150px; background: var(--primary-color); }
+        .top-search-bar button { width: auto; padding: 12px 20px; }
 
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .grid { grid-template-columns: 1fr 2fr; } }
@@ -153,10 +154,11 @@
         <p>✨ منصة العلوم والأكاديمية الذكية لإدارة الحضور، الامتحانات، والتقارير الاحترافية ✨</p>
     </header>
 
-    <!-- 1. البحث عن طالب (بالكود أو الاسم) في أعلى الصفحة -->
+    <!-- شريط البحث العلوي مع زر مسح كافة البيانات القديمة -->
     <div class="top-search-bar">
         <input type="text" id="searchInput" placeholder="🔍 ابحث عن طالب بالكود أو الاسم الكامل...">
         <button type="button" id="searchBtn">بحث عن طالب</button>
+        <button type="button" class="btn-danger" onclick="clearAllOldData()" style="width: auto;">🗑️ مسح كل البيانات القديمة</button>
     </div>
 
     <div class="grid">
@@ -330,6 +332,24 @@
         renderGroups(filtered);
     };
 
+    // دالة تفريغ ومسح جميع البيانات القديمة (الطلاب والمجاميع دفعة واحدة)
+    window.clearAllOldData = async function() {
+        if (!confirm("⚠️ تحذير خطير: هل أنت متأكد من رغبتك في حذف جميع بيانات الطلاب والمجاميع القديمة نهائياً والبدء من جديد؟")) return;
+
+        // 1. حذف جميع الطلاب أولاً
+        const { error: studentsError } = await window.supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // 2. حذف جميع المجاميع
+        const { error: groupsError } = await window.supabase.from('groups').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (studentsError || groupsError) {
+            alert("حدث خطأ أثناء مسح البيانات القديمة.");
+        } else {
+            alert("✨ تم مسح جميع البيانات القديمة بنجاح وأصبحت الصفحة نظيفة تماماً!");
+            location.reload();
+        }
+    };
+
     window.deleteGroup = async function(groupId) {
         if (!confirm("هل أنت متأكد من حذف هذه المجموعة؟ سيتم محي جميع الطلاب وأكوادهم وبياناتهم التابعين لها نهائياً!")) return;
 
@@ -354,7 +374,6 @@
         } else {
             alert("تم حذف المجموعة وجميع الطلاب وبياناتهم بنجاح.");
             
-            // إغلاق قسم تفاصيل الطالب إذا كان الطالب المعروض ينتمي للمجموعة المحذوفة
             if (currentStudentData && currentStudentData.group_id === groupId) {
                 document.getElementById("studentContainer").style.display = "none";
                 currentStudentId = null;
