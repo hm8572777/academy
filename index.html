@@ -331,13 +331,36 @@
     };
 
     window.deleteGroup = async function(groupId) {
-        if (!confirm("هل أنت متأكد من حذف هذه المجموعة؟ سيتم حذف جميع الطلاب التابعين لها تلقائياً!")) return;
+        if (!confirm("هل أنت متأكد من حذف هذه المجموعة؟ سيتم محي جميع الطلاب وأكوادهم وبياناتهم التابعين لها نهائياً!")) return;
 
-        const { error } = await window.supabase.from('groups').delete().eq('id', groupId);
-        if (error) {
-            alert("حدث خطأ أثناء الحذف: " + error.message);
+        // 1. حذف جميع الطلاب التابعين لهذه المجموعة أولاً
+        const { error: studentsError } = await window.supabase
+            .from('students')
+            .delete()
+            .eq('group_id', groupId);
+
+        if (studentsError) {
+            return alert("حدث خطأ أثناء حذف بيانات الطلاب التابعين للمجموعة: " + studentsError.message);
+        }
+
+        // 2. حذف المجموعة نفسها بعد تفريغها من الطلاب
+        const { error: groupError } = await window.supabase
+            .from('groups')
+            .delete()
+            .eq('id', groupId);
+
+        if (groupError) {
+            alert("حدث خطأ أثناء حذف المجموعة: " + groupError.message);
         } else {
-            alert("تم حذف المجموعة بنجاح.");
+            alert("تم حذف المجموعة وجميع الطلاب وبياناتهم بنجاح.");
+            
+            // إغلاق قسم تفاصيل الطالب إذا كان الطالب المعروض ينتمي للمجموعة المحذوفة
+            if (currentStudentData && currentStudentData.group_id === groupId) {
+                document.getElementById("studentContainer").style.display = "none";
+                currentStudentId = null;
+                currentStudentData = null;
+            }
+
             if (selectedGroupId === groupId) {
                 selectedGroupId = null;
                 document.getElementById("addStudentCard").style.display = "none";
@@ -422,6 +445,7 @@
             if (currentStudentId === studentId) {
                 document.getElementById("studentContainer").style.display = "none";
                 currentStudentId = null;
+                currentStudentData = null;
             }
             if(selectedGroupId) loadStudentsOfGroup(selectedGroupId);
         }
